@@ -30,7 +30,7 @@ class WakeLockApp:
         self.root.resizable(False, False)
 
         self.running = False
-        self.auto_vscode_enabled = False
+        self.auto_vscode_enabled = True   # Enabled by default
         self.start_time = None
         self.elapsed_seconds = 0
 
@@ -51,13 +51,21 @@ class WakeLockApp:
         self.toggle_button = ttk.Button(self.frame, text="Start", bootstyle="success", command=self.toggle)
         self.toggle_button.pack(pady=5, ipadx=10, ipady=4)
 
+        # Checkbox variable set to True by default
+        self.auto_var = ttk.BooleanVar(value=True)
         self.auto_check = ttk.Checkbutton(
             self.frame,
             text="Auto-run when VS Code is open",
             bootstyle="info-round-toggle",
-            command=self.toggle_vscode_mode
+            command=self.toggle_vscode_mode,
+            variable=self.auto_var
         )
         self.auto_check.pack(pady=10)
+
+        # Start the watcher thread immediately if not alive
+        if not self.vscode_monitor_thread.is_alive():
+            self.vscode_monitor_thread = threading.Thread(target=self.vscode_watcher, daemon=True)
+            self.vscode_monitor_thread.start()
 
     def prevent_sleep(self):
         while self.running:
@@ -92,7 +100,7 @@ class WakeLockApp:
             self.time_label.config(text="Runtime: 00:00:00")
 
     def toggle_vscode_mode(self):
-        self.auto_vscode_enabled = not self.auto_vscode_enabled
+        self.auto_vscode_enabled = self.auto_var.get()
         if self.auto_vscode_enabled and not self.vscode_monitor_thread.is_alive():
             self.vscode_monitor_thread = threading.Thread(target=self.vscode_watcher, daemon=True)
             self.vscode_monitor_thread.start()
